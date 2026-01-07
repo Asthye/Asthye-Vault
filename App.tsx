@@ -15,14 +15,14 @@ function App() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
 
-  // Load from LocalStorage and handle Migrations
+  // Load from LocalStorage and handle Migrations (Merge legacy Humans/Non-humans)
   useEffect(() => {
     const savedAssets = localStorage.getItem('forge_assets');
     const savedCategories = localStorage.getItem('forge_categories');
     
     if (savedAssets) {
       const parsedAssets = JSON.parse(savedAssets);
-      // Migration: Merge humans/non-humans into characters
+      // Migration: Remap 'humans' and 'non-humans' to the new 'characters' ID
       const migratedAssets = parsedAssets.map((asset: ModelAsset) => {
         if (asset.categoryId === 'humans' || asset.categoryId === 'non-humans') {
           return { ...asset, categoryId: 'characters' };
@@ -34,9 +34,11 @@ function App() {
     
     if (savedCategories) {
       const parsedCats = JSON.parse(savedCategories);
+      // Filter out legacy categories while preserving user-created ones
       const mergedCats = [...DEFAULT_CATEGORIES];
       parsedCats.forEach((cat: Category) => {
-        if (!mergedCats.find(c => c.id === cat.id) && cat.id !== 'humans' && cat.id !== 'non-humans') {
+        const isCoreOrLegacy = ['all', 'cars', 'characters', 'weapons', 'props', 'environments', 'humans', 'non-humans'].includes(cat.id);
+        if (!isCoreOrLegacy) {
           mergedCats.push(cat);
         }
       });
@@ -110,7 +112,7 @@ function App() {
 
   return (
     <div className="min-h-screen pb-20 w-full overflow-x-hidden">
-      {/* Navigation Header - Expanded Width */}
+      {/* Navigation Header - Optimized for Full Width */}
       <header className="sticky top-0 z-40 glass border-b border-slate-200/50">
         <div className="w-full px-6 lg:px-12 h-24 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -121,11 +123,11 @@ function App() {
             </div>
             <div>
               <h1 className="text-2xl font-black font-display tracking-tight text-slate-900 leading-none uppercase">Asthye Vault</h1>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Premium Asset Studio</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital Asset Studio</span>
             </div>
           </div>
 
-          <div className="flex-grow max-w-2xl px-12 hidden md:block">
+          <div className="flex-grow max-w-3xl px-12 hidden md:block">
             <div className="relative group">
               <input 
                 type="text" 
@@ -154,11 +156,11 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content - Expanded Width */}
+      {/* Main Content - Full Width Padding */}
       <main className="w-full px-6 lg:px-12 mt-12">
         <div className="flex flex-col space-y-6 mb-12">
           <div className="flex flex-col space-y-6">
-            {/* Categories */}
+            {/* Categories Selection */}
             <div className="flex flex-wrap gap-3 items-center">
               <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-2">Categories</span>
               {categories.map(cat => (
@@ -185,7 +187,7 @@ function App() {
               </button>
             </div>
 
-            {/* Tags Cloud */}
+            {/* Dynamic Tags Cloud */}
             {allAvailableTags.length > 0 && (
               <div className="flex flex-wrap gap-2.5 items-center bg-white/30 p-4 rounded-2xl border border-white/50">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Thematic Tags</span>
@@ -233,7 +235,7 @@ function App() {
           </div>
         </div>
 
-        {/* Gallery Grid - Expanded Columns for Full Width */}
+        {/* Gallery Grid - Optimized for wide screens (Up to 6 columns) */}
         {filteredAssets.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-8 pb-20">
             {filteredAssets.map(asset => {
@@ -265,6 +267,7 @@ function App() {
         )}
       </main>
 
+      {/* Persistent Branding Footer */}
       <footer className="mt-auto py-16 border-t border-slate-300/30 text-center w-full">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <div className="w-2 h-2 rounded-full bg-indigo-500"></div>

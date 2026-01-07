@@ -1,5 +1,5 @@
 import React from 'react';
-import { Category } from './types';
+import { Category } from './types.ts';
 
 export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'all', name: 'All Assets', color: '#6366f1' },
