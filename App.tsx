@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ModelAsset, Category, SortOption } from './types';
-import { DEFAULT_CATEGORIES, CATEGORY_COLORS } from './constants';
-import ModelCard from './components/ModelCard';
-import AddModelModal from './components/AddModelModal';
+import { ModelAsset, Category, SortOption } from './types.ts';
+import { DEFAULT_CATEGORIES, CATEGORY_COLORS } from './constants.tsx';
+import ModelCard from './components/ModelCard.tsx';
+import AddModelModal from './components/AddModelModal.tsx';
 
 function App() {
   const [assets, setAssets] = useState<ModelAsset[]>([]);
@@ -34,7 +34,6 @@ function App() {
     
     if (savedCategories) {
       const parsedCats = JSON.parse(savedCategories);
-      // Ensure DEFAULT_CATEGORIES takes precedence for the core IDs if they were modified
       const mergedCats = [...DEFAULT_CATEGORIES];
       parsedCats.forEach((cat: Category) => {
         if (!mergedCats.find(c => c.id === cat.id) && cat.id !== 'humans' && cat.id !== 'non-humans') {
@@ -110,10 +109,10 @@ function App() {
   }, [assets, selectedCategoryId, selectedTags, searchQuery, sortOption]);
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20 w-full overflow-x-hidden">
       {/* Navigation Header - Expanded Width */}
       <header className="sticky top-0 z-40 glass border-b border-slate-200/50">
-        <div className="w-full mx-auto px-6 lg:px-12 h-24 flex items-center justify-between">
+        <div className="w-full px-6 lg:px-12 h-24 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shadow-slate-900/10 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,16 +148,14 @@ function App() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
               </svg>
-              <span>ADD TO VAULT</span>
+              <span>ADD ASSET</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content - Expanded Width */}
-      <main className="w-full mx-auto px-6 lg:px-12 mt-12">
-        
-        {/* Toolbar */}
+      <main className="w-full px-6 lg:px-12 mt-12">
         <div className="flex flex-col space-y-6 mb-12">
           <div className="flex flex-col space-y-6">
             {/* Categories */}
@@ -236,9 +233,9 @@ function App() {
           </div>
         </div>
 
-        {/* Gallery Grid - Expanded Columns */}
+        {/* Gallery Grid - Expanded Columns for Full Width */}
         {filteredAssets.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-8 pb-20">
             {filteredAssets.map(asset => {
               const category = categories.find(c => c.id === asset.categoryId) || categories[0];
               return (
@@ -268,8 +265,7 @@ function App() {
         )}
       </main>
 
-      {/* Footer Branding */}
-      <footer className="mt-32 py-16 border-t border-slate-300/30 text-center w-full">
+      <footer className="mt-auto py-16 border-t border-slate-300/30 text-center w-full">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
           <div className="w-2 h-2 rounded-full bg-slate-300"></div>
@@ -279,7 +275,6 @@ function App() {
         <p className="text-xs text-slate-500 font-medium italic opacity-60">Professional curating tool for the digital modding era.</p>
       </footer>
 
-      {/* Modals */}
       <AddModelModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -289,7 +284,6 @@ function App() {
         onAddCategory={handleAddCategory}
       />
 
-      {/* Simple Category Addition Modal */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl transition-all duration-300">
           <div className="glass w-full max-w-sm rounded-3xl p-8 shadow-2xl animate-in zoom-in duration-300">
