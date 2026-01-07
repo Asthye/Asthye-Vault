@@ -1,13 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const suggestMetadata = async (description: string, existingCategories: string[]) => {
-  if (!process.env.API_KEY) {
-    console.warn("API_KEY not found in process.env");
+  // Safe check for browser environment
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : undefined;
+  
+  if (!apiKey) {
+    console.warn("API_KEY not found. Gemini suggestions disabled.");
     return null;
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Given this user description of a 3D model/mod: "${description}", 

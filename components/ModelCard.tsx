@@ -1,6 +1,6 @@
 import React from 'react';
-import { ModelAsset, Category } from '../types';
-import CategoryBadge from './CategoryBadge';
+import { ModelAsset, Category } from '../types.ts';
+import CategoryBadge from './CategoryBadge.tsx';
 
 interface ModelCardProps {
   asset: ModelAsset;

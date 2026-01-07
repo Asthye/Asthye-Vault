@@ -62,9 +62,14 @@
         transform: translate(-50%, -50%);
         font-family: 'Outfit', sans-serif;
         font-weight: 800;
-        color: #cbd5e1;
+        color: #94a3b8;
         letter-spacing: 0.3em;
         font-size: 0.75rem;
+        animation: pulse 2s infinite ease-in-out;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
       }
     </style>
     <script type="importmap">
