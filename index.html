@@ -72,6 +72,14 @@
         50% { opacity: 1; }
       }
     </style>
+    <!-- CRITICAL FIX: Define process.env to prevent app crash in browser -->
+    <script>
+      window.process = {
+        env: {
+          NODE_ENV: 'development'
+        }
+      };
+    </script>
     <script type="importmap">
 {
   "imports": {

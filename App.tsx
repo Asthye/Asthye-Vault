@@ -13,16 +13,22 @@ function App() {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [apiKeyInput, setApiKeyInput] = useState('');
 
-  // Load from LocalStorage and handle Migrations (Merge legacy Humans/Non-humans)
+  // Load data and handle migrations
   useEffect(() => {
     const savedAssets = localStorage.getItem('forge_assets');
     const savedCategories = localStorage.getItem('forge_categories');
     
+    // Load API Key into input if exists
+    const savedKey = localStorage.getItem('asthye_gemini_key');
+    if (savedKey) setApiKeyInput(savedKey);
+
     if (savedAssets) {
       const parsedAssets = JSON.parse(savedAssets);
-      // Migration: Remap 'humans' and 'non-humans' to the new 'characters' ID
+      // Migration: Remap 'humans' and 'non-humans' to 'characters'
       const migratedAssets = parsedAssets.map((asset: ModelAsset) => {
         if (asset.categoryId === 'humans' || asset.categoryId === 'non-humans') {
           return { ...asset, categoryId: 'characters' };
@@ -34,7 +40,6 @@ function App() {
     
     if (savedCategories) {
       const parsedCats = JSON.parse(savedCategories);
-      // Filter out legacy categories while preserving user-created ones
       const mergedCats = [...DEFAULT_CATEGORIES];
       parsedCats.forEach((cat: Category) => {
         const isCoreOrLegacy = ['all', 'cars', 'characters', 'weapons', 'props', 'environments', 'humans', 'non-humans'].includes(cat.id);
@@ -51,6 +56,12 @@ function App() {
     localStorage.setItem('forge_assets', JSON.stringify(assets));
     localStorage.setItem('forge_categories', JSON.stringify(categories));
   }, [assets, categories]);
+
+  const saveApiKey = () => {
+    localStorage.setItem('asthye_gemini_key', apiKeyInput.trim());
+    setIsSettingsOpen(false);
+    alert("API Key Saved Successfully!");
+  };
 
   const handleAddAsset = (assetData: Omit<ModelAsset, 'id' | 'createdAt'>) => {
     const newAsset: ModelAsset = {
@@ -112,7 +123,7 @@ function App() {
 
   return (
     <div className="min-h-screen pb-20 w-full overflow-x-hidden">
-      {/* Navigation Header - Optimized for Full Width */}
+      {/* Navigation Header */}
       <header className="sticky top-0 z-40 glass border-b border-slate-200/50">
         <div className="w-full px-6 lg:px-12 h-24 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -143,6 +154,18 @@ function App() {
           </div>
 
           <div className="flex items-center space-x-4">
+             {/* Settings Button */}
+             <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-3 bg-white/50 text-slate-600 rounded-xl hover:bg-white hover:text-slate-900 transition-all border border-transparent hover:border-slate-200"
+              title="Settings & API Key"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+
             <button 
               onClick={() => setIsModalOpen(true)}
               className="shine-button flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white px-7 py-3 rounded-2xl font-bold shadow-2xl shadow-slate-900/20 transition-all transform active:scale-95"
@@ -156,11 +179,10 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content - Full Width Padding */}
+      {/* Main Content */}
       <main className="w-full px-6 lg:px-12 mt-12">
         <div className="flex flex-col space-y-6 mb-12">
           <div className="flex flex-col space-y-6">
-            {/* Categories Selection */}
             <div className="flex flex-wrap gap-3 items-center">
               <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-2">Categories</span>
               {categories.map(cat => (
@@ -187,7 +209,6 @@ function App() {
               </button>
             </div>
 
-            {/* Dynamic Tags Cloud */}
             {allAvailableTags.length > 0 && (
               <div className="flex flex-wrap gap-2.5 items-center bg-white/30 p-4 rounded-2xl border border-white/50">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Thematic Tags</span>
@@ -235,7 +256,7 @@ function App() {
           </div>
         </div>
 
-        {/* Gallery Grid - Optimized for wide screens (Up to 6 columns) */}
+        {/* Gallery Grid */}
         {filteredAssets.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-8 pb-20">
             {filteredAssets.map(asset => {
@@ -326,6 +347,48 @@ function App() {
                   className="flex-1 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 uppercase tracking-widest text-[10px]"
                 >
                   Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl transition-all duration-300">
+          <div className="glass w-full max-w-md rounded-3xl p-8 shadow-2xl animate-in zoom-in duration-300">
+            <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight uppercase">Settings</h2>
+            <p className="text-sm text-slate-500 mb-6 font-medium">Configure your studio environment.</p>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Google Gemini API Key</label>
+                <input 
+                  type="password"
+                  placeholder="AIzaSy..."
+                  className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white focus:border-indigo-400 transition-all shadow-inner font-mono text-sm"
+                  value={apiKeyInput}
+                  onChange={e => setApiKeyInput(e.target.value)}
+                />
+                <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                  Required for AI auto-tagging. Your key is stored locally in your browser and never sent to our servers.
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline ml-1">Get a key here.</a>
+                </p>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button 
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-widest text-[10px]"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={saveApiKey}
+                  className="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/20 uppercase tracking-widest text-[10px]"
+                >
+                  Save Config
                 </button>
               </div>
             </div>

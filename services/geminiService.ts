@@ -1,11 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const suggestMetadata = async (description: string, existingCategories: string[]) => {
-  // Safe check for browser environment
-  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : undefined;
+  // Retrieve API key from browser storage
+  const apiKey = localStorage.getItem('asthye_gemini_key');
   
   if (!apiKey) {
-    console.warn("API_KEY not found. Gemini suggestions disabled.");
+    alert("Please set your Google Gemini API Key in the Settings (Gear Icon) first!");
     return null;
   }
 
@@ -39,6 +39,7 @@ export const suggestMetadata = async (description: string, existingCategories: s
     return JSON.parse(response.text || '{}');
   } catch (error) {
     console.error("Gemini metadata suggestion failed:", error);
+    alert("AI Suggestion Failed. Check your API Key or try again.");
     return null;
   }
 };
