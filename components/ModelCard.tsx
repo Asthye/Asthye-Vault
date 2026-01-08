@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ModelAsset, Category } from '../types.ts';
 import CategoryBadge from './CategoryBadge.tsx';
 
@@ -10,6 +10,16 @@ interface ModelCardProps {
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete, onEdit }) => {
+  const [imageAlignment, setImageAlignment] = useState<'object-center' | 'object-top'>('object-center');
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    // If height is greater than width (portrait), align to top to show faces/heads
+    if (naturalHeight > naturalWidth) {
+      setImageAlignment('object-top');
+    }
+  };
+
   return (
     <div 
       className="group relative glass platinum-card rounded-2xl overflow-hidden flex flex-col h-full border-l-4"
@@ -19,7 +29,8 @@ const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete, onEdit
         <img 
           src={asset.imageUrl || `https://picsum.photos/seed/${asset.id}/400/300`} 
           alt={asset.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          onLoad={handleImageLoad}
+          className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${imageAlignment}`}
         />
         <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-6">
           <a 
