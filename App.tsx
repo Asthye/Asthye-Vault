@@ -4,6 +4,15 @@ import { DEFAULT_CATEGORIES, CATEGORY_COLORS } from './constants.tsx';
 import ModelCard from './components/ModelCard.tsx';
 import AddModelModal from './components/AddModelModal.tsx';
 
+// Curated background presets
+const BG_PRESETS = [
+  { name: 'Platinum (Default)', value: 'radial-gradient(circle at 50% 0%, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%)', color: '#e2e8f0' },
+  { name: 'Dark Slate', value: '#0f172a', color: '#0f172a' },
+  { name: 'Midnight Void', value: 'radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 100%)', color: '#1e1b4b' },
+  { name: 'Warm Paper', value: '#fdfbf7', color: '#fdfbf7' },
+  { name: 'Soft Gray', value: '#f3f4f6', color: '#f3f4f6' },
+];
+
 function App() {
   const [assets, setAssets] = useState<ModelAsset[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
@@ -11,11 +20,19 @@ function App() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
+  
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+
+  // Form States
   const [newCatName, setNewCatName] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState('');
+  
+  // Custom Background State
+  const [customBackground, setCustomBackground] = useState<string>(BG_PRESETS[0].value);
   
   // State for editing
   const [editingAsset, setEditingAsset] = useState<ModelAsset | null>(null);
@@ -25,9 +42,13 @@ function App() {
     const savedAssets = localStorage.getItem('forge_assets');
     const savedCategories = localStorage.getItem('forge_categories');
     
-    // Load API Key into input if exists
+    // Load API Key
     const savedKey = localStorage.getItem('asthye_gemini_key');
     if (savedKey) setApiKeyInput(savedKey);
+
+    // Load Saved Background
+    const savedBg = localStorage.getItem('asthye_bg');
+    if (savedBg) setCustomBackground(savedBg);
 
     if (savedAssets) {
       const parsedAssets = JSON.parse(savedAssets);
@@ -59,6 +80,27 @@ function App() {
     localStorage.setItem('forge_assets', JSON.stringify(assets));
     localStorage.setItem('forge_categories', JSON.stringify(categories));
   }, [assets, categories]);
+
+  // Apply Background Effect
+  useEffect(() => {
+    document.body.style.background = customBackground;
+    document.body.style.backgroundAttachment = 'fixed';
+    
+    // Adjust text color based on background brightness (simple heuristic)
+    const isDark = customBackground.includes('#0f172a') || customBackground.includes('#1e1b4b') || customBackground.includes('#020617');
+    if (isDark) {
+      document.body.classList.add('dark-mode'); 
+      // We can add a global style class or set variable, but for now let's rely on component styling flexibility
+      // For this specific design, we might need to adjust header text colors if dark mode is active
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [customBackground]);
+
+  const handleBackgroundChange = (value: string) => {
+    setCustomBackground(value);
+    localStorage.setItem('asthye_bg', value);
+  };
 
   const saveApiKey = () => {
     localStorage.setItem('asthye_gemini_key', apiKeyInput.trim());
@@ -110,23 +152,16 @@ function App() {
     const newId = name.toLowerCase().replace(/\s+/g, '-');
     
     // Smart Color Selection
-    // 1. Find all colors currently used
     const usedColors = new Set(categories.map(c => c.color));
-    
-    // 2. Find colors from palette that are NOT used
     const availableColors = CATEGORY_COLORS.filter(c => !usedColors.has(c));
     
     let color;
     if (availableColors.length > 0) {
-      // Pick a random unused color
       const randomIndex = Math.floor(Math.random() * availableColors.length);
       color = availableColors[randomIndex];
     } else {
-      // If all are used, pick a random one from the full palette, 
-      // but try to avoid the color of the very last category to prevent neighbors looking identical
       const lastUsedColor = categories[categories.length - 1]?.color;
       const recyclableColors = CATEGORY_COLORS.filter(c => c !== lastUsedColor);
-      
       const randomIndex = Math.floor(Math.random() * recyclableColors.length);
       color = recyclableColors[randomIndex];
     }
@@ -168,6 +203,11 @@ function App() {
       });
   }, [assets, selectedCategoryId, selectedTags, searchQuery, sortOption]);
 
+  // Determine text color for header based on background
+  const isDarkBg = customBackground.includes('#0f172a') || customBackground.includes('#1e1b4b') || customBackground.includes('#020617');
+  const headerTextColor = isDarkBg ? 'text-white' : 'text-slate-900';
+  const subHeaderTextColor = isDarkBg ? 'text-slate-400' : 'text-slate-400';
+
   return (
     <div className="min-h-screen pb-20 w-full overflow-x-hidden">
       {/* Navigation Header */}
@@ -180,8 +220,8 @@ function App() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-black font-display tracking-tight text-slate-900 leading-none uppercase">Asthye Vault</h1>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital Asset Studio</span>
+              <h1 className={`text-2xl font-black font-display tracking-tight leading-none uppercase ${headerTextColor}`}>Asthye Vault</h1>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${subHeaderTextColor}`}>Digital Asset Studio</span>
             </div>
           </div>
 
@@ -201,7 +241,58 @@ function App() {
           </div>
 
           <div className="flex items-center space-x-4">
-             {/* Settings Button */}
+            {/* Background Picker Button */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+                className="p-3 bg-white/50 text-slate-600 rounded-xl hover:bg-white hover:text-slate-900 transition-all border border-transparent hover:border-slate-200"
+                title="Change Background"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+              </button>
+              
+              {/* Color Popover */}
+              {isColorPickerOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 glass rounded-2xl p-4 shadow-2xl animate-in zoom-in-95 duration-200 z-50">
+                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Theme</h3>
+                  <div className="grid grid-cols-5 gap-2 mb-4">
+                    {BG_PRESETS.map((preset) => (
+                       <button
+                         key={preset.name}
+                         onClick={() => handleBackgroundChange(preset.value)}
+                         className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${customBackground === preset.value ? 'border-indigo-600 scale-110 shadow-md' : 'border-white/50'}`}
+                         style={{ background: preset.color }}
+                         title={preset.name}
+                       />
+                    ))}
+                  </div>
+                  
+                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Custom Color</h3>
+                  <div className="flex items-center space-x-2 bg-white/50 rounded-lg p-2 border border-slate-200">
+                    <input 
+                      type="color" 
+                      className="w-8 h-8 rounded cursor-pointer border-none bg-transparent"
+                      onChange={(e) => handleBackgroundChange(e.target.value)}
+                      value={customBackground.startsWith('#') ? customBackground : '#ffffff'}
+                    />
+                    <span className="text-xs text-slate-600 font-mono flex-grow text-right">
+                       {customBackground.includes('gradient') ? 'Gradient' : customBackground}
+                    </span>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleBackgroundChange(BG_PRESETS[0].value)}
+                    className="w-full mt-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                  >
+                    Reset Default
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Settings Button */}
              <button 
               onClick={() => setIsSettingsOpen(true)}
               className="p-3 bg-white/50 text-slate-600 rounded-xl hover:bg-white hover:text-slate-900 transition-all border border-transparent hover:border-slate-200"
@@ -234,7 +325,7 @@ function App() {
         <div className="flex flex-col space-y-6 mb-12">
           <div className="flex flex-col space-y-6">
             <div className="flex flex-wrap gap-3 items-center">
-              <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mr-2">Categories</span>
+              <span className={`text-[11px] font-black uppercase tracking-widest mr-2 ${isDarkBg ? 'text-slate-300' : 'text-slate-400'}`}>Categories</span>
               {categories.map(cat => (
                 <button
                   key={cat.id}
@@ -261,7 +352,7 @@ function App() {
 
             {allAvailableTags.length > 0 && (
               <div className="flex flex-wrap gap-2.5 items-center bg-white/30 p-4 rounded-2xl border border-white/50">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Thematic Tags</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest mr-2 ${isDarkBg ? 'text-slate-300' : 'text-slate-400'}`}>Thematic Tags</span>
                 {allAvailableTags.map(tag => (
                   <button
                     key={tag}
@@ -288,8 +379,8 @@ function App() {
           </div>
 
           <div className="flex justify-between items-center border-b border-slate-300/30 pb-4">
-            <div className="text-sm font-semibold text-slate-400">
-              Showing <span className="text-slate-900 font-bold">{filteredAssets.length}</span> curated assets
+            <div className={`text-sm font-semibold ${isDarkBg ? 'text-slate-300' : 'text-slate-400'}`}>
+              Showing <span className={`${isDarkBg ? 'text-white' : 'text-slate-900'} font-bold`}>{filteredAssets.length}</span> curated assets
             </div>
             <div className="flex items-center space-x-3 bg-white/40 p-1.5 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-[10px] font-bold text-slate-400 uppercase px-3 border-r border-slate-200">Sort Matrix</span>
@@ -329,7 +420,7 @@ function App() {
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                </svg>
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">VAULT EMPTY</h3>
+            <h3 className={`text-2xl font-black mb-3 tracking-tight ${isDarkBg ? 'text-white' : 'text-slate-900'}`}>VAULT EMPTY</h3>
             <p className="text-slate-500 max-w-sm font-medium leading-relaxed">
               {searchQuery || selectedCategoryId !== 'all' || selectedTags.length > 0
                 ? "No models match your current filters. Clear them to reveal your archive." 
@@ -347,6 +438,7 @@ function App() {
           <div className="w-2 h-2 rounded-full bg-slate-300"></div>
         </div>
         <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">ASTHYE VAULT SYSTEM</p>
+        <p className={`text-xs font-medium italic opacity-60 ${isDarkBg ? 'text-slate-400' : 'text-slate-500'}`}>Professional curating tool for the digital modding era.</p>
       </footer>
 
       <AddModelModal 
