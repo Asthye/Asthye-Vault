@@ -108,7 +108,29 @@ function App() {
     if (exists) return exists.id;
 
     const newId = name.toLowerCase().replace(/\s+/g, '-');
-    const color = CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length];
+    
+    // Smart Color Selection
+    // 1. Find all colors currently used
+    const usedColors = new Set(categories.map(c => c.color));
+    
+    // 2. Find colors from palette that are NOT used
+    const availableColors = CATEGORY_COLORS.filter(c => !usedColors.has(c));
+    
+    let color;
+    if (availableColors.length > 0) {
+      // Pick a random unused color
+      const randomIndex = Math.floor(Math.random() * availableColors.length);
+      color = availableColors[randomIndex];
+    } else {
+      // If all are used, pick a random one from the full palette, 
+      // but try to avoid the color of the very last category to prevent neighbors looking identical
+      const lastUsedColor = categories[categories.length - 1]?.color;
+      const recyclableColors = CATEGORY_COLORS.filter(c => c !== lastUsedColor);
+      
+      const randomIndex = Math.floor(Math.random() * recyclableColors.length);
+      color = recyclableColors[randomIndex];
+    }
+
     const newCat: Category = { id: newId, name, color };
     setCategories(prev => [...prev, newCat]);
     return newId;
@@ -325,7 +347,6 @@ function App() {
           <div className="w-2 h-2 rounded-full bg-slate-300"></div>
         </div>
         <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">ASTHYE VAULT SYSTEM</p>
-        <p className="text-xs text-slate-500 font-medium italic opacity-60">Professional curating tool for the digital modding era.</p>
       </footer>
 
       <AddModelModal 
