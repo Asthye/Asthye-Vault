@@ -16,6 +16,9 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState('');
+  
+  // State for editing
+  const [editingAsset, setEditingAsset] = useState<ModelAsset | null>(null);
 
   // Load data and handle migrations
   useEffect(() => {
@@ -63,13 +66,35 @@ function App() {
     alert("API Key Saved Successfully!");
   };
 
-  const handleAddAsset = (assetData: Omit<ModelAsset, 'id' | 'createdAt'>) => {
-    const newAsset: ModelAsset = {
-      ...assetData,
-      id: crypto.randomUUID(),
-      createdAt: Date.now()
-    };
-    setAssets(prev => [newAsset, ...prev]);
+  const handleSaveAsset = (assetData: Omit<ModelAsset, 'id' | 'createdAt'>) => {
+    if (editingAsset) {
+      // Update existing asset
+      setAssets(prev => prev.map(a => 
+        a.id === editingAsset.id 
+          ? { ...a, ...assetData } 
+          : a
+      ));
+    } else {
+      // Create new asset
+      const newAsset: ModelAsset = {
+        ...assetData,
+        id: crypto.randomUUID(),
+        createdAt: Date.now()
+      };
+      setAssets(prev => [newAsset, ...prev]);
+    }
+    closeModal();
+  };
+
+  const handleEditAsset = (asset: ModelAsset) => {
+    setEditingAsset(asset);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    // Short delay to allow modal animation to finish before clearing state
+    setTimeout(() => setEditingAsset(null), 300);
   };
 
   const handleDeleteAsset = (id: string) => {
@@ -167,7 +192,10 @@ function App() {
             </button>
 
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setEditingAsset(null);
+                setIsModalOpen(true);
+              }}
               className="shine-button flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white px-7 py-3 rounded-2xl font-bold shadow-2xl shadow-slate-900/20 transition-all transform active:scale-95"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,6 +295,7 @@ function App() {
                   asset={asset} 
                   category={category} 
                   onDelete={handleDeleteAsset}
+                  onEdit={handleEditAsset}
                 />
               );
             })}
@@ -301,11 +330,12 @@ function App() {
 
       <AddModelModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={closeModal} 
         categories={categories}
         availableTags={allAvailableTags}
-        onAdd={handleAddAsset}
+        onSave={handleSaveAsset}
         onAddCategory={handleAddCategory}
+        editingAsset={editingAsset}
       />
 
       {isCategoryModalOpen && (

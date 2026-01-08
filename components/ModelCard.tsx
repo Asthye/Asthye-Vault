@@ -6,9 +6,10 @@ interface ModelCardProps {
   asset: ModelAsset;
   category: Category;
   onDelete: (id: string) => void;
+  onEdit: (asset: ModelAsset) => void;
 }
 
-const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete }) => {
+const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete, onEdit }) => {
   return (
     <div 
       className="group relative glass platinum-card rounded-2xl overflow-hidden flex flex-col h-full border-l-4"
@@ -30,7 +31,18 @@ const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete }) => {
             Open Source
           </a>
         </div>
-        <div className="absolute top-3 right-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+        
+        {/* Action Buttons */}
+        <div className="absolute top-3 right-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 flex space-x-2">
+           <button 
+            onClick={(e) => { e.preventDefault(); onEdit(asset); }}
+            className="p-2 bg-white/90 hover:bg-indigo-50 text-indigo-600 rounded-full shadow-lg transition-colors border border-indigo-100"
+            title="Edit asset"
+           >
+             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+             </svg>
+           </button>
            <button 
             onClick={(e) => { e.preventDefault(); onDelete(asset.id); }}
             className="p-2 bg-white/90 hover:bg-red-50 text-red-500 rounded-full shadow-lg transition-colors border border-red-100"
@@ -58,7 +70,7 @@ const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete }) => {
         </p>
         
         {asset.tags && asset.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-4">
+          <div className="flex flex-wrap gap-1.5">
             {asset.tags.slice(0, 3).map(tag => (
               <span key={tag} className="px-2 py-0.5 bg-slate-100/80 border border-slate-200/50 rounded-md text-[9px] text-slate-500 font-bold uppercase tracking-wider">
                 #{tag}
@@ -69,18 +81,6 @@ const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete }) => {
             )}
           </div>
         )}
-
-        <div className="pt-4 border-t border-slate-200/50 flex justify-between items-center">
-           <div className="flex items-center space-x-2">
-             <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center">
-                <svg className="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" /></svg>
-             </div>
-             <span className="text-[10px] text-slate-400 font-semibold">User Collection</span>
-           </div>
-           <svg className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-           </svg>
-        </div>
       </div>
     </div>
   );

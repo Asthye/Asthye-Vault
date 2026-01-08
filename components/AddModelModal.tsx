@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Category, ModelAsset } from '../types';
 import { suggestMetadata } from '../services/geminiService';
 
@@ -7,8 +7,9 @@ interface AddModelModalProps {
   onClose: () => void;
   categories: Category[];
   availableTags: string[];
-  onAdd: (asset: Omit<ModelAsset, 'id' | 'createdAt'>) => void;
+  onSave: (asset: Omit<ModelAsset, 'id' | 'createdAt'>) => void;
   onAddCategory: (name: string) => string;
+  editingAsset?: ModelAsset | null;
 }
 
 const AddModelModal: React.FC<AddModelModalProps> = ({ 
@@ -16,8 +17,9 @@ const AddModelModal: React.FC<AddModelModalProps> = ({
   onClose, 
   categories, 
   availableTags,
-  onAdd, 
-  onAddCategory 
+  onSave, 
+  onAddCategory,
+  editingAsset
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -31,6 +33,33 @@ const AddModelModal: React.FC<AddModelModalProps> = ({
   const [newTagInput, setNewTagInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Populate form if editing
+  useEffect(() => {
+    if (isOpen) {
+      if (editingAsset) {
+        setFormData({
+          name: editingAsset.name,
+          sourceUrl: editingAsset.sourceUrl,
+          imageUrl: editingAsset.imageUrl,
+          categoryId: editingAsset.categoryId,
+          description: editingAsset.description,
+        });
+        setSelectedTags(editingAsset.tags || []);
+      } else {
+        // Reset defaults for new asset
+        setFormData({
+          name: '',
+          sourceUrl: '',
+          imageUrl: '',
+          categoryId: categories[1]?.id || 'all',
+          description: '',
+        });
+        setSelectedTags([]);
+      }
+      setError('');
+    }
+  }, [isOpen, editingAsset, categories]);
 
   const combinedTags = useMemo(() => {
     return Array.from(new Set([...availableTags, ...selectedTags])).sort();
@@ -93,17 +122,7 @@ const AddModelModal: React.FC<AddModelModalProps> = ({
       return;
     }
 
-    onAdd({ ...formData, tags: selectedTags });
-    
-    setFormData({
-      name: '',
-      sourceUrl: '',
-      imageUrl: '',
-      categoryId: categories[1]?.id || 'all',
-      description: '',
-    });
-    setSelectedTags([]);
-    setNewTagInput('');
+    onSave({ ...formData, tags: selectedTags });
     onClose();
   };
 
@@ -111,7 +130,9 @@ const AddModelModal: React.FC<AddModelModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold font-display text-slate-900">Add New Asset</h2>
+          <h2 className="text-2xl font-bold font-display text-slate-900">
+            {editingAsset ? 'Edit Asset' : 'Add New Asset'}
+          </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-900 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -259,7 +280,7 @@ const AddModelModal: React.FC<AddModelModalProps> = ({
               type="submit"
               className="flex-[2] px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-xl shadow-indigo-600/20 transition-all"
             >
-              Save Asset
+              {editingAsset ? 'Update Asset' : 'Save Asset'}
             </button>
           </div>
         </form>
