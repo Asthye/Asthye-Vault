@@ -33,6 +33,8 @@ function App() {
   
   // Custom Background State
   const [customBackground, setCustomBackground] = useState<string>(BG_PRESETS[0].value);
+  const [pickerColor, setPickerColor] = useState<string>(BG_PRESETS[0].color);
+  const [isGradient, setIsGradient] = useState<boolean>(true);
   
   // State for editing
   const [editingAsset, setEditingAsset] = useState<ModelAsset | null>(null);
@@ -46,9 +48,26 @@ function App() {
     const savedKey = localStorage.getItem('asthye_gemini_key');
     if (savedKey) setApiKeyInput(savedKey);
 
-    // Load Saved Background
+    // Load Saved Background and sync picker state
     const savedBg = localStorage.getItem('asthye_bg');
-    if (savedBg) setCustomBackground(savedBg);
+    if (savedBg) {
+      setCustomBackground(savedBg);
+      
+      // Attempt to sync the picker controls to the saved background
+      const isGrad = savedBg.includes('gradient');
+      setIsGradient(isGrad);
+      
+      // If it matches a preset, use the preset's representative color
+      const preset = BG_PRESETS.find(p => p.value === savedBg);
+      if (preset) {
+        setPickerColor(preset.color);
+      } else if (!isGrad) {
+        // If it's a solid custom color (hex/rgb), use it directly
+        setPickerColor(savedBg);
+      } 
+      // Note: If it's a custom gradient string not from presets, we might default pickerColor to existing state
+      // or try to extract it, but for simplicity we keep the default or previous state.
+    }
 
     if (savedAssets) {
       const parsedAssets = JSON.parse(savedAssets);
@@ -90,16 +109,60 @@ function App() {
     const isDark = customBackground.includes('#0f172a') || customBackground.includes('#1e1b4b') || customBackground.includes('#020617');
     if (isDark) {
       document.body.classList.add('dark-mode'); 
-      // We can add a global style class or set variable, but for now let's rely on component styling flexibility
-      // For this specific design, we might need to adjust header text colors if dark mode is active
     } else {
       document.body.classList.remove('dark-mode');
     }
   }, [customBackground]);
 
-  const handleBackgroundChange = (value: string) => {
-    setCustomBackground(value);
-    localStorage.setItem('asthye_bg', value);
+  // Helper to generate a lighter version of a hex color
+  const getHighlightColor = (hex: string) => {
+    // Validate hex format
+    if (!/^#[0-9A-F]{6}$/i.test(hex)) return '#ffffff';
+    
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    // Mix with white (60% white, 40% original color) to create a bright tinted spotlight
+    const factor = 0.6;
+    
+    const rH = Math.round(r + (255 - r) * factor);
+    const gH = Math.round(g + (255 - g) * factor);
+    const bH = Math.round(b + (255 - b) * factor);
+
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    return `#${toHex(rH)}${toHex(gH)}${toHex(bH)}`;
+  };
+
+  // Helper to construct and set background
+  const applyBackground = (color: string, gradientMode: boolean) => {
+    let bgValue = color;
+    if (gradientMode) {
+       // Spotlight effect: Lighter Tint top -> Selected Color body
+       const highlight = getHighlightColor(color);
+       bgValue = `radial-gradient(circle at 50% 0%, ${highlight} 0%, ${color} 100%)`;
+    }
+    setCustomBackground(bgValue);
+    localStorage.setItem('asthye_bg', bgValue);
+  };
+
+  const handlePresetSelect = (preset: typeof BG_PRESETS[0]) => {
+    setCustomBackground(preset.value);
+    localStorage.setItem('asthye_bg', preset.value);
+    setPickerColor(preset.color);
+    setIsGradient(preset.value.includes('gradient'));
+  };
+
+  const handleColorPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    setPickerColor(color);
+    applyBackground(color, isGradient);
+  };
+
+  const handleGradientToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setIsGradient(checked);
+    applyBackground(pickerColor, checked);
   };
 
   const saveApiKey = () => {
@@ -220,8 +283,8 @@ function App() {
               </svg>
             </div>
             <div>
-              <h1 className={`text-2xl font-black font-display tracking-tight leading-none uppercase ${headerTextColor}`}>Asthye Vault</h1>
-              <span className={`text-[10px] font-bold uppercase tracking-widest ${subHeaderTextColor}`}>Digital Asset Studio</span>
+              <h1 className={`text-2xl font-black font-display tracking-tight leading-none uppercase ${headerTextColor}`}>Asthye's Vault</h1>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${subHeaderTextColor}`}>Digital Asset Collection</span>
             </div>
           </div>
 
@@ -256,12 +319,12 @@ function App() {
               {/* Color Popover */}
               {isColorPickerOpen && (
                 <div className="absolute right-0 top-full mt-2 w-64 glass rounded-2xl p-4 shadow-2xl animate-in zoom-in-95 duration-200 z-50">
-                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Theme</h3>
+                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Theme Presets</h3>
                   <div className="grid grid-cols-5 gap-2 mb-4">
                     {BG_PRESETS.map((preset) => (
                        <button
                          key={preset.name}
-                         onClick={() => handleBackgroundChange(preset.value)}
+                         onClick={() => handlePresetSelect(preset)}
                          className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${customBackground === preset.value ? 'border-indigo-600 scale-110 shadow-md' : 'border-white/50'}`}
                          style={{ background: preset.color }}
                          title={preset.name}
@@ -270,20 +333,38 @@ function App() {
                   </div>
                   
                   <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Custom Color</h3>
-                  <div className="flex items-center space-x-2 bg-white/50 rounded-lg p-2 border border-slate-200">
-                    <input 
-                      type="color" 
-                      className="w-8 h-8 rounded cursor-pointer border-none bg-transparent"
-                      onChange={(e) => handleBackgroundChange(e.target.value)}
-                      value={customBackground.startsWith('#') ? customBackground : '#ffffff'}
-                    />
-                    <span className="text-xs text-slate-600 font-mono flex-grow text-right">
-                       {customBackground.includes('gradient') ? 'Gradient' : customBackground}
-                    </span>
+                  <div className="space-y-3 bg-white/50 rounded-lg p-3 border border-slate-200">
+                    <div className="flex items-center space-x-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded cursor-pointer border-none bg-transparent"
+                        onChange={handleColorPick}
+                        value={pickerColor}
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Hex Code</span>
+                        <span className="text-xs text-slate-700 font-mono font-bold">
+                          {pickerColor}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center pt-2 border-t border-slate-200/50">
+                      <input
+                        id="gradient-toggle"
+                        type="checkbox"
+                        checked={isGradient}
+                        onChange={handleGradientToggle}
+                        className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 focus:ring-2 cursor-pointer"
+                      />
+                      <label htmlFor="gradient-toggle" className="ml-2 text-[10px] font-bold text-slate-600 uppercase tracking-wide cursor-pointer select-none">
+                        Use Spotlight Gradient
+                      </label>
+                    </div>
                   </div>
                   
                   <button 
-                    onClick={() => handleBackgroundChange(BG_PRESETS[0].value)}
+                    onClick={() => handlePresetSelect(BG_PRESETS[0])}
                     className="w-full mt-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                   >
                     Reset Default
