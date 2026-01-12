@@ -14,8 +14,8 @@ const ModelCard: React.FC<ModelCardProps> = ({ asset, category, onDelete, onEdit
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth, naturalHeight } = e.currentTarget;
-    // If height is greater than width (portrait), align to top to show faces/heads
-    if (naturalHeight > naturalWidth) {
+    // If height is greater than OR EQUAL to width (portrait or square), align to top to show faces/heads
+    if (naturalHeight >= naturalWidth) {
       setImageAlignment('object-top');
     }
   };
